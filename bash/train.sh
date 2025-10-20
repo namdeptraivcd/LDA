@@ -1,0 +1,15 @@
+python main.py \
+  --hidden_size 256 \
+  --num_topics 16 \
+  --dropout 0.2 \
+  --use_lognormal 0 \
+  --epochs 48 \
+  --batch_size 32 \
+  --lr 1e-3 \
+  --wd 0.0 \
+  --epoch_size 2000 \
+  --seed 42 \
+  --data_dir 'data/' \
+  --dataset '20news' \
+  --checkpoint_dir 'data/output_models' \
+  --checkpoint_path ''
