@@ -1,15 +1,19 @@
 python main.py \
+  --track_loss 1 \
   --hidden_size 256 \
   --num_topics 16 \
+  --num_top_words 10 \
   --dropout 0.2 \
   --use_lognormal 0 \
-  --epochs 48 \
+  --num_epochs 1000 \
   --batch_size 32 \
   --lr 1e-3 \
   --wd 0.0 \
   --epoch_size 2000 \
   --seed 42 \
-  --data_dir 'data/' \
+  --data_dir 'data/datasets' \
   --dataset '20news' \
   --checkpoint_dir 'data/output_models' \
-  --checkpoint_path ''
+  --checkpoint_path '' \
+  --use_kaggle 0 \
+  --use_colab 0 
