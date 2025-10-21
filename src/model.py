@@ -80,3 +80,29 @@ class ProdLDA(nn.Module):
         t = t / t.sum(1, keepdim=True)
         outputs = self.decode(t)
         return outputs, posterior
+    def get_beta(self):
+        """_summary_
+
+        Returns:
+            _type_: beta matrix, shape: (num_topics, vocab_size)
+        """
+        with torch.no_grad():
+            beta=F.softmax(self.decode.bn(self.decode.fc.weight.t()),dim=1) # @QUESTION
+        return beta.cpu().numpy()
+    def get_theta(self,inputs):
+        """_summary_
+
+        Args:
+            inputs (_type_): document list, shape: (batch_size, vocab_size)
+        
+        Returns:
+            _type_: shape: theta matrix, (batch_size, num_topics)
+        """
+        self.eval()
+        with torch.no_grad():
+            h=self.encode(inputs)
+            posterior=self.h2t(h)
+            theta=posterior.mean.to(inputs.device)
+            theta=theta/theta.sum(1,keepdim=True) # @QUESTION
+        return theta.cpu().numpy()
+        

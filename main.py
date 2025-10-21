@@ -9,13 +9,14 @@ def main():
     Config.add_data_argument(parser)
     args=parser.parse_args()
     data=Dataset(data_dir=args.data_dir,dataset=args.dataset)
-    model=ProdLDA(vocab_size=len(data.vocab),hidden_size=args.hidden_size,num_topics=args.num_topics,dropout=args.dropout,use_lognormal=args.use_lognormal)
+    model=ProdLDA(vocab_size=len(data.vocab),hidden_size=args.hidden_size,num_topics=args.num_topics,dropout=args.dropout,use_lognormal=args.use_lognormal).to(Config.DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     trainer=Trainer(model,optimizer,args)
     if args.checkpoint_path:
         trainer.load_checkpoint(args.checkpoint_path)
     else:
         trainer.fit(data.train_data,data.valid_data,args.num_epochs)
+    trainer.test(data.train_data,data.test_data,data.vocab,args.num_top_words)
 
-if __name__ == 'main':
+if __name__ == '__main__':
     main()
