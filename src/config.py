@@ -8,7 +8,7 @@ class Config:
     WIKI_DIR_KAGGLE=os.path.join('kaggle','input','wikipedia','wikipedia_bd')
     WIKI_DIR_COLAB=os.path.join('..','wikipedia','wikipedia_bd')
     WIKI_DIR_LOCAL=os.path.join('data','evaluation','wikipedia','wikipedia_bd')
-
+    PLM_MODEL="all-mpnet-base-v2"
     @staticmethod
     def create_new_parser():
         parser = argparse.ArgumentParser()
@@ -34,14 +34,13 @@ class Config:
                             help='learning rate')
         parser.add_argument('--wd', type=float, default=0.0,
                             help='weight decay used for regularization')
-        parser.add_argument('--epoch_size', type=int, default=2000,
-                            help='number of training steps in an epoch')
         parser.add_argument('--seed', type=int, default=42,
                             help='random seed')
         parser.add_argument('--checkpoint_dir',type=str,default=os.path.join('data','output_models'))
         parser.add_argument('--checkpoint_path',type=str,default='')
         parser.add_argument('--use_kaggle',type=int,default=0)
         parser.add_argument('--use_colab',type=int,default=0)
+        parser.add_argument('--read_labels',type=int,default=0)
     @staticmethod
     def add_data_argument(parser):
         parser.add_argument('--data_dir',type=str,default=os.path.join('data','datasets'))
