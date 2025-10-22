@@ -1,11 +1,11 @@
 python main.py \
   --track_loss 1 \
   --hidden_size 256 \
-  --num_topics 16 \
-  --num_top_words 10 \
+  --num_topics 50 \
+  --num_top_words 15 \
   --dropout 0.2 \
   --use_lognormal 0 \
-  --num_epochs 1 \
+  --num_epochs 10 \
   --batch_size 32 \
   --lr 1e-3 \
   --wd 0.0 \

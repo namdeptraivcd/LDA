@@ -90,6 +90,10 @@ class Trainer:
         # TD
         td=Metrics.td(top_words_list_str=top_words_list_str)
         print(f'TD_{num_top_words}: {td:.4f}')
+        # IRBO
+        irbo=Metrics.irbo(top_words_list_str=top_words_list_str,topk=num_top_words,weight=0.9)
+        print(f'IRBO_{num_top_words}: {irbo:.4f}')
+        
         # Clustering and Classification
         if self.args.read_labels:
             # Clustering:
@@ -99,6 +103,18 @@ class Trainer:
             # Purity
             purity=Metrics.purity(test_theta, self.dataset.test_labels)
             print(f'Purity: {purity:.4f}')
+            # Inverse Purity
+            inverse_purity=Metrics.inverse_purity(test_theta, self.dataset.test_labels)
+            print(f'Inverse Purity: {inverse_purity:.4f}')
+            # Harmonic Purity
+            harmonic_purity=Metrics.harmonic_purity(test_theta, self.dataset.test_labels)
+            print(f'Harmonic Purity: {harmonic_purity:.4f}')
+            # ARI
+            ari=Metrics.ari(test_theta, self.dataset.test_labels)
+            print(f'ARI: {ari:.4f}')
+            # MIS
+            mis=Metrics.mis(test_theta, self.dataset.test_labels)
+            print(f'MIS: {mis:.4f}')
             # Classification:
             # Accuracy
             acc=Metrics.accuracy(train_theta, test_theta, self.dataset.train_labels, self.dataset.test_labels, tune=self.args.tune_SVM)
@@ -106,6 +122,7 @@ class Trainer:
             # Marco-F1
             marco_f1=Metrics.accuracy(train_theta, test_theta, self.dataset.train_labels, self.dataset.test_labels, tune=self.args.tune_SVM)
             print(f'Marco-F1: {marco_f1:.4f}')
+        
         # TC on Wiki
         tc_list,tc=Metrics.tc_on_wiki(use_kaggle=self.args.use_kaggle,use_colab=self.args.use_colab,top_words_path=top_words_path)
         print(f'TC_{num_top_words}: {tc:.4f}')

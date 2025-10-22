@@ -46,5 +46,6 @@ class Config:
     def add_data_argument(parser):
         parser.add_argument('--data_dir',type=str,default=os.path.join('data','datasets'))
         parser.add_argument('--dataset',type=str,default='20NG')
-        parser.add_argument('--checkpoint_dir',type=str,default=os.path.join('data','output_models'))
+        parser.add_argument('--con
+                            ',type=str,default=os.path.join('data','output_models'))
         parser.add_argument('--checkpoint_path',type=str,default='')
