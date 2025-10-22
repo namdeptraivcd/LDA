@@ -10,10 +10,11 @@ python main.py \
   --lr 1e-3 \
   --wd 0.0 \
   --seed 42 \
+  --use_kaggle 0 \
+  --use_colab 0 \
+  --read_labels 1 \
+  --tune_SVM 0 \
   --data_dir 'data/datasets' \
   --dataset '20NG' \
   --checkpoint_dir 'data/output_models' \
-  --checkpoint_path '' \
-  --use_kaggle 0 \
-  --use_colab 0 \
-  --read_labels 1
+  --checkpoint_path '' 
