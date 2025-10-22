@@ -1,6 +1,7 @@
 import os
 import logging
 import numpy as np
+import itertools
 from typing import List
 from gensim.models import CoherenceModel
 from gensim.corpora import Dictionary
@@ -50,24 +51,11 @@ class Metrics:
         TD=(TF==1).sum()/(K*T)
         return TD
     @staticmethod
-    def ibro():
-        pass
-    @staticmethod
-    def nmi(theta,labels):
-        return Clustering.nmi(theta,labels)
-    @staticmethod
-    def purity(theta,labels):
-        return Clustering.purity(theta,labels)
-    @staticmethod
-    def accuracy(train_theta,test_theta,train_labels,test_labels,classifier='SVM',gamma='scale',tune=False):
-        return Classification.accuracy(train_theta,test_theta,train_labels,test_labels,classifier='SVM',gamma='scale',tune=False)
-    @staticmethod
-    def marco_f1(train_theta,test_theta,train_labels,test_labels,classifier='SVM',gamma='scale',tune=False):
-        return Classification.marco_f1(train_theta,test_theta,train_labels,test_labels,classifier='SVM',gamma='scale',tune=False)
-    @staticmethod
-    def ari():
-        pass
-class Clustering:
+    def irbo(top_words_list_str:List[str],topk:int=10,weight:float=0.9):
+        top_words_list = Utils.split_list_str(top_words_list_str)
+        return RBO.irbo(top_words_list, topk=topk, weight=weight)
+    
+    # Clustering:
     @staticmethod
     def nmi(theta,labels):
         preds=np.argmax(theta,axis=1)
@@ -77,7 +65,41 @@ class Clustering:
         preds=np.argmax(theta,axis=1)
         contingency_matrix=metrics.cluster.contingency_matrix(labels_true=labels,labels_pred=preds)
         return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
-class Classification:
+    @staticmethod
+    def inverse_purity(theta,labels):
+        preds=np.argmax(theta,axis=1)
+        contingency_matrix=metrics.cluster.contingency_matrix(labels_true=labels,labels_pred=preds)
+        recall = contingency_matrix / contingency_matrix.sum(axis=1).reshape(-1, 1)
+        inverse_purity = (np.amax(recall, axis=1) * contingency_matrix.sum(axis=1)).sum() / contingency_matrix.sum()
+        return inverse_purity
+    @staticmethod
+    def harmonic_purity(theta,labels):
+        preds=np.argmax(theta,axis=1)
+        contingency_matrix=metrics.cluster.contingency_matrix(labels_true=labels,labels_pred=preds)
+        precision = contingency_matrix / contingency_matrix.sum(axis=0).reshape(1, -1)
+        recall = contingency_matrix / contingency_matrix.sum(axis=1).reshape(-1, 1)
+        
+        # Handle division by zero: replace inf/nan with 0
+        precision = np.nan_to_num(precision)
+        recall = np.nan_to_num(recall)
+        
+        # Calculate F1, avoiding division by zero
+        with np.errstate(divide='ignore', invalid='ignore'):
+            f1 = 2 * (precision * recall) / (precision + recall)
+        f1 = np.nan_to_num(f1)
+        
+        harmonic_purity = (np.amax(f1, axis=1) * contingency_matrix.sum(axis=1)).sum() / contingency_matrix.sum()
+        return harmonic_purity
+    @staticmethod
+    def ari(theta,labels):
+        preds=np.argmax(theta,axis=1)
+        return metrics.adjusted_rand_score(labels_true=labels,labels_pred=preds)
+    @staticmethod
+    def mis(theta,labels):
+        preds=np.argmax(theta,axis=1)
+        return metrics.normalized_mutual_info_score(labels_true=labels,labels_pred=preds)
+    
+    # Classification:
     @staticmethod
     def accuracy(train_theta,test_theta,train_labels,test_labels,classifier='SVM',gamma='scale',tune=False):
         if tune:
@@ -132,3 +154,69 @@ class Classification:
             preds=clf.predict(test_theta)
             marco_f1=metrics.f1_score(y_true=test_labels,y_pred=preds,average='macro')
         return marco_f1
+    
+class RBO:
+    """Rank-Biased Overlap implementation for topic diversity measurement."""
+    
+    @staticmethod
+    def set_at_depth(lst, depth):
+        ans = set()
+        for v in lst[:depth]:
+            if isinstance(v, set):
+                ans.update(v)
+            else:
+                ans.add(v)
+        return ans
+
+    @staticmethod
+    def raw_overlap(list1, list2, depth):
+        set1, set2 = RBO.set_at_depth(list1, depth), RBO.set_at_depth(list2, depth)
+        return len(set1.intersection(set2)), len(set1), len(set2)
+
+    @staticmethod
+    def overlap(list1, list2, depth):
+        return RBO.agreement(list1, list2, depth) * min(depth, len(list1), len(list2))
+
+    @staticmethod
+    def agreement(list1, list2, depth):
+        len_intersection, len_set1, len_set2 = RBO.raw_overlap(list1, list2, depth)
+        return 2 * len_intersection / (len_set1 + len_set2)
+
+    @staticmethod
+    def rbo_ext(list1, list2, p):
+        """RBO point estimate based on extrapolating observed overlap."""
+        S, L = sorted((list1, list2), key=len)
+        s, l = len(S), len(L)
+        x_l = RBO.overlap(list1, list2, l)
+        x_s = RBO.overlap(list1, list2, s)
+        sum1 = sum(p ** d * RBO.agreement(list1, list2, d) for d in range(1, l + 1))
+        sum2 = sum(p ** d * x_s * (d - s) / s / d for d in range(s + 1, l + 1))
+        term1 = (1 - p) / p * (sum1 + sum2)
+        term2 = p ** l * ((x_l - x_s) / l + x_s / s)
+        return term1 + term2
+
+    @staticmethod
+    def irbo(top_words, topk=10, weight=0.9):
+        """Calculate Inverted Rank-Biased Overlap (IRBO) of top words.
+        
+        Args:
+            top_words: List of lists, each containing top words for a topic
+            topk: Number of top words to consider
+            weight: RBO parameter p (probability of continuing)
+        
+        Returns:
+            IRBO score (1 - mean RBO)
+        """
+        if not top_words:
+            raise ValueError("top_words cannot be empty.")
+
+        min_len = min(len(lst) for lst in top_words)
+        if topk > min_len:
+            raise ValueError(f"topk={topk} > min_len({min_len}).")
+
+        scores = []
+        for list1, list2 in itertools.combinations(top_words, 2):
+            rbo_val = RBO.rbo_ext(list1[:topk], list2[:topk], p=weight)
+            scores.append(rbo_val)
+
+        return 1.0 - np.mean(scores)
