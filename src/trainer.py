@@ -8,10 +8,11 @@ from torch.distributions import kl_divergence
 from src.metrics import Metrics
 from src.config import Config
 class Trainer:
-    def __init__(self,model,optimizer,args):
+    def __init__(self,model,optimizer,args,dataset):
         self.model=model
         self.optimizer=optimizer
         self.args=args
+        self.dataset=dataset
         self.device=Config.DEVICE
         self.batch_size=args.batch_size
         self.checkpoint_dir=args.checkpoint_dir
@@ -73,26 +74,41 @@ class Trainer:
             val_loss/=cnt
         return val_loss
     def test(self,train_data,test_data,vocab,num_top_words):
-        '''train_theta=self.get_theta(train_data)
-        test_theta=self.get_theta(test_data)'''
+        train_theta=self.get_theta(train_data)
+        test_theta=self.get_theta(test_data)
         top_words_list_str=self.get_top_words(vocab,num_top_words)
         top_words_path=os.path.join(self.checkpoint_dir,f'top_words_{num_top_words}.txt')
         os.makedirs(self.checkpoint_dir,exist_ok=True)
         with open(top_words_path,'w') as f:
             for top_words_str in top_words_list_str:
                 f.write(top_words_str+'\n')
-        
-        # TD
-        td=Metrics.td(top_words_list_str=top_words_list_str)
-        print(f'TD_{num_top_words}: {td:.4f}')
-        # TC on Wiki
-        tc_list,tc=Metrics.tc_on_wiki(use_kaggle=self.args.use_kaggle,use_colab=self.args.use_colab,top_words_path=top_words_path)
-        print(f'TC_{num_top_words}: {tc:.4f}')
         # Top words list
         topic=0
         for top_words_str in top_words_list_str:
             print(f'Topic {topic}: {top_words_str}')
             topic+=1
+        # TD
+        td=Metrics.td(top_words_list_str=top_words_list_str)
+        print(f'TD_{num_top_words}: {td:.4f}')
+        # Clustering and Classification
+        if self.args.read_labels:
+            # Clustering:
+            # NMI
+            nmi=Metrics.nmi(test_theta, self.dataset.test_labels)
+            print(f'NMI: {nmi:.4f}')
+            # Purity
+            purity=Metrics.purity(test_theta, self.dataset.test_labels)
+            print(f'Purity: {purity:.4f}')
+            # Classification:
+            # Accuracy
+            acc=Metrics.accuracy(train_theta, test_theta, self.dataset.train_labels, self.dataset.test_labels, tune=self.args.tune_SVM)
+            print(f'Accuracy: {acc:.4f}')
+            # Marco-F1
+            marco_f1=Metrics.accuracy(train_theta, test_theta, self.dataset.train_labels, self.dataset.test_labels, tune=self.args.tune_SVM)
+            print(f'Marco-F1: {marco_f1:.4f}')
+        # TC on Wiki
+        tc_list,tc=Metrics.tc_on_wiki(use_kaggle=self.args.use_kaggle,use_colab=self.args.use_colab,top_words_path=top_words_path)
+        print(f'TC_{num_top_words}: {tc:.4f}')
                 
     def get_theta(self,data):
         """This method return a full version of theta, not batched theta
@@ -105,7 +121,7 @@ class Trainer:
         """
         data_size=data.shape[0]
         theta=[]
-        with torch.no_grad:
+        with torch.no_grad():
             self.model.eval()
             for start_idx in range(0,data_size,self.batch_size):
                 end_idx=min(start_idx+self.batch_size,data_size)
