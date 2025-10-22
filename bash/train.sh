@@ -5,15 +5,15 @@ python main.py \
   --num_top_words 10 \
   --dropout 0.2 \
   --use_lognormal 0 \
-  --num_epochs 1000 \
+  --num_epochs 1 \
   --batch_size 32 \
   --lr 1e-3 \
   --wd 0.0 \
-  --epoch_size 2000 \
   --seed 42 \
   --data_dir 'data/datasets' \
-  --dataset '20news' \
+  --dataset '20NG' \
   --checkpoint_dir 'data/output_models' \
   --checkpoint_path '' \
   --use_kaggle 0 \
-  --use_colab 0 
+  --use_colab 0 \
+  --read_labels 1

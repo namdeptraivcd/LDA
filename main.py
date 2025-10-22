@@ -8,7 +8,7 @@ def main():
     Config.add_train_argument(parser)
     Config.add_data_argument(parser)
     args=parser.parse_args()
-    data=Dataset(data_dir=args.data_dir,dataset=args.dataset)
+    data=Dataset(args)
     model=ProdLDA(vocab_size=len(data.vocab),hidden_size=args.hidden_size,num_topics=args.num_topics,dropout=args.dropout,use_lognormal=args.use_lognormal).to(Config.DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     trainer=Trainer(model,optimizer,args)
